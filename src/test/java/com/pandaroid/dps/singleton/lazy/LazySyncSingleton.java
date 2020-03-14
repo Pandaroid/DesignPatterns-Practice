@@ -1,4 +1,4 @@
-package com.pandaroid.dps.singleton;
+package com.pandaroid.dps.singleton.lazy;
 
 public class LazySyncSingleton implements ILazySingleton {
 

@@ -1,8 +1,8 @@
-package com.pandaroid.dps.threads;
+package com.pandaroid.dps.singleton.threads;
 
-import com.pandaroid.dps.singleton.ILazySingleton;
-import com.pandaroid.dps.singleton.LazySimpleSingleton;
-import com.pandaroid.dps.singleton.LazySyncSingleton;
+import com.pandaroid.dps.singleton.lazy.ILazySingleton;
+import com.pandaroid.dps.singleton.lazy.LazySimpleSingleton;
+import com.pandaroid.dps.singleton.lazy.LazySyncSingleton;
 
 public class EtTest implements Runnable {
 

@@ -1,6 +1,6 @@
-package com.pandaroid.dps;
+package com.pandaroid.dps.singleton;
 
-import com.pandaroid.dps.threads.EtTest;
+import com.pandaroid.dps.singleton.threads.EtTest;
 import org.junit.jupiter.api.Test;
 
 public class DesignPatternsTests {
