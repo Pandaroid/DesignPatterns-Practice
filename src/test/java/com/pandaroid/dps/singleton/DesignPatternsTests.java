@@ -2,8 +2,12 @@ package com.pandaroid.dps.singleton;
 
 import com.pandaroid.dps.singleton.threads.EtTest;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DesignPatternsTests {
+    private static final Logger logger = LoggerFactory.getLogger(DesignPatternsTests.class);
+
     @Test
     void testPaySimpleFactory() {
         System.out.println("[DesignPatternsApplicationTests testPaySimpleFactory]");
@@ -12,6 +16,9 @@ public class DesignPatternsTests {
     @Test
     void testDpLazySimpleSingleton() throws InterruptedException {
         System.out.println("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
+        logger.debug("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
+        logger.info("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
+        logger.warn("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
         Thread t1 = new Thread(new EtTest());
         Thread t2 = new Thread(new EtTest());
         t1.start();
