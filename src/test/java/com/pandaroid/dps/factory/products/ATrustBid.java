@@ -1,4 +1,4 @@
-package com.pandaroid.dps.factory.simple.products;
+package com.pandaroid.dps.factory.products;
 
 public abstract class ATrustBid {
     protected String trustBidMemo;

@@ -1,6 +1,6 @@
-package com.pandaroid.dps.factory.simple.products;
+package com.pandaroid.dps.factory.products;
 
-import com.pandaroid.dps.factory.simple.ITrustBid;
+import com.pandaroid.dps.factory.ITrustBid;
 
 public class RealEstateTrustBid extends ATrustBid implements ITrustBid {
 
