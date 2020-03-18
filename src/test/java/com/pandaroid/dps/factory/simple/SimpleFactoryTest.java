@@ -9,8 +9,6 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
 
 /**
 * 简单工厂解决问题：封装复杂的创建逻辑，对用户透明，简化调用获取产品的逻辑

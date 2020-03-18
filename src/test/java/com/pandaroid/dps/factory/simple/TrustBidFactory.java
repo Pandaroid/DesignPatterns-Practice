@@ -7,6 +7,10 @@ import org.springframework.util.StringUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * 简单工厂适用于工厂类创建的产品对象较少
+ * 客户端只需要提供工厂类创建产品对象的参数，对于其如何创建的过程逻辑不用关心
+ */
 public class TrustBidFactory {
     // Start: 工厂模式一般会结合单例模式使用
     private static TrustBidFactory trustBidFactory;
