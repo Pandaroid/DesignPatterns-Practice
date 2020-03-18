@@ -1,7 +1,8 @@
 package com.pandaroid.dps.factory.simple;
 
-import com.pandaroid.dps.factory.simple.products.InfrastructureTrustBid;
-import com.pandaroid.dps.factory.simple.products.RealEstateTrustBid;
+import com.pandaroid.dps.factory.ITrustBid;
+import com.pandaroid.dps.factory.products.InfrastructureTrustBid;
+import com.pandaroid.dps.factory.products.RealEstateTrustBid;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,21 +30,21 @@ public class SimpleFactoryTest {
         }
         infrustructureTrustBid.pubTrustBid();
         //
-        ITrustBid reakEstateTrustBid = trustBidFactory.createTrustBidByName("ReakEstateTrustBid");
-        if(null == reakEstateTrustBid) {
-            logger.error("reakEstateTrustBid is null");
+        ITrustBid realEstateTrustBid = trustBidFactory.createTrustBidByName("ReakEstateTrustBid");
+        if(null == realEstateTrustBid) {
+            logger.error("realEstateTrustBid is null");
             return ;
         }
-        reakEstateTrustBid.pubTrustBid();
+        realEstateTrustBid.pubTrustBid();
         // 使用简单工厂模式：createTrustBidByClassName
-        ITrustBid infrustructureTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.simple.products.InfrastructureTrustBid");
+        ITrustBid infrustructureTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.products.InfrastructureTrustBid");
         if(null == infrustructureTrustBidByClassName) {
             logger.error("infrustructureTrustBidByClassName is null");
             return ;
         }
         infrustructureTrustBidByClassName.pubTrustBid();
         //
-        ITrustBid realEstateTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.simple.products.RealEstateTrustBid");
+        ITrustBid realEstateTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.products.RealEstateTrustBid");
         if(null == realEstateTrustBidByClassName) {
             logger.error("realEstateTrustBidByClassName is null");
             return ;

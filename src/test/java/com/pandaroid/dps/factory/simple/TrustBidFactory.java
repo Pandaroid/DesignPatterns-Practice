@@ -1,7 +1,8 @@
 package com.pandaroid.dps.factory.simple;
 
-import com.pandaroid.dps.factory.simple.products.InfrastructureTrustBid;
-import com.pandaroid.dps.factory.simple.products.RealEstateTrustBid;
+import com.pandaroid.dps.factory.ITrustBid;
+import com.pandaroid.dps.factory.products.InfrastructureTrustBid;
+import com.pandaroid.dps.factory.products.RealEstateTrustBid;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Constructor;
