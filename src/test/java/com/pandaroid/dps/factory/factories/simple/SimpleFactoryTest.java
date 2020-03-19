@@ -1,8 +1,8 @@
-package com.pandaroid.dps.factory.simple;
+package com.pandaroid.dps.factory.factories.simple;
 
-import com.pandaroid.dps.factory.ITrustBid;
-import com.pandaroid.dps.factory.products.InfrastructureTrustBid;
-import com.pandaroid.dps.factory.products.RealEstateTrustBid;
+import com.pandaroid.dps.factory.products.ITrustBid;
+import com.pandaroid.dps.factory.products.bids.InfrastructureTrustBid;
+import com.pandaroid.dps.factory.products.bids.RealEstateTrustBid;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +37,14 @@ public class SimpleFactoryTest {
         }
         realEstateTrustBid.pubTrustBid();
         // 使用简单工厂模式：createTrustBidByClassName
-        ITrustBid infrustructureTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.products.InfrastructureTrustBid");
+        ITrustBid infrustructureTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.products.bids.InfrastructureTrustBid");
         if(null == infrustructureTrustBidByClassName) {
             logger.error("infrustructureTrustBidByClassName is null");
             return ;
         }
         infrustructureTrustBidByClassName.pubTrustBid();
         //
-        ITrustBid realEstateTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.products.RealEstateTrustBid");
+        ITrustBid realEstateTrustBidByClassName = trustBidFactory.createTrustBidByClassName("com.pandaroid.dps.factory.products.bids.RealEstateTrustBid");
         if(null == realEstateTrustBidByClassName) {
             logger.error("realEstateTrustBidByClassName is null");
             return ;

@@ -1,7 +1,7 @@
-package com.pandaroid.dps.factory.method;
+package com.pandaroid.dps.factory.factories.method;
 
-import com.pandaroid.dps.factory.ITrustBid;
-import com.pandaroid.dps.factory.products.RealEstateTrustBid;
+import com.pandaroid.dps.factory.products.ITrustBid;
+import com.pandaroid.dps.factory.products.bids.RealEstateTrustBid;
 
 public class RealEstateTrustFactory extends ATrustBidFactory implements ITrustBidMethodFactory {
     @Override

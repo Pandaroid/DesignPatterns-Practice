@@ -1,4 +1,4 @@
-package com.pandaroid.dps.factory.method;
+package com.pandaroid.dps.factory.factories.method;
 
 /**
  * 可以将一些重复的逻辑抽象出来，放到抽象类里面

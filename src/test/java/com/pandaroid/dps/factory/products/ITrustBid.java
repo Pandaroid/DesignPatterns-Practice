@@ -1,4 +1,4 @@
-package com.pandaroid.dps.factory;
+package com.pandaroid.dps.factory.products;
 
 /**
  * 信托产品接口，我们当时公司内部都说"标的"

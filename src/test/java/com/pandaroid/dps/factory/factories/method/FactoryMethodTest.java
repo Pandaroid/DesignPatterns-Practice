@@ -1,6 +1,6 @@
-package com.pandaroid.dps.factory.method;
+package com.pandaroid.dps.factory.factories.method;
 
-import com.pandaroid.dps.factory.ITrustBid;
+import com.pandaroid.dps.factory.products.ITrustBid;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
