@@ -1,4 +1,6 @@
 package com.pandaroid.dps.factory.factories.abstractf.iproducts;
 
-public interface IExperienceTrustBid {
+import com.pandaroid.dps.factory.products.ITrustBid;
+
+public interface IExperienceTrustBid extends ITrustBid {
 }

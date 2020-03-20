@@ -1,4 +1,6 @@
 package com.pandaroid.dps.factory.factories.abstractf.iproducts;
 
-public interface ITransferTrustBid {
+import com.pandaroid.dps.factory.products.ITrustBid;
+
+public interface ITransferTrustBid extends ITrustBid {
 }

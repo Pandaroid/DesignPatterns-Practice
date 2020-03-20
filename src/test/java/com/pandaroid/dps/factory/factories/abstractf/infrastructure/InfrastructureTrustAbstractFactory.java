@@ -15,16 +15,16 @@ public class InfrastructureTrustAbstractFactory implements ITrustBidAbstractFact
 
     @Override
     public ICurrentTrustBid createCurrentTrustBid() {
-        return new InfrastructureCurrentTrustBid("");
+        return new InfrastructureCurrentTrustBid("InfrastructureTrustAbstractFactory.createCurrentTrustBid");
     }
 
     @Override
     public ITransferTrustBid createTransferTrustBid() {
-        return null;
+        return new InfrastructureTransferTrustBid("InfrastructureTrustAbstractFactory.createTransferTrustBid");
     }
 
     @Override
     public IExperienceTrustBid createExperienceTrustBid() {
-        return null;
+        return new InfrastructureExperienceTrustBid("InfrastructureTrustAbstractFactory.createExperienceTrustBid");
     }
 }

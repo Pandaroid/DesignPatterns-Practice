@@ -10,6 +10,6 @@ public class InfrastructureCurrentTrustBid extends ATrustBid implements ICurrent
 
     @Override
     public void pubTrustBid() {
-        System.out.println("[InfrastructureCurrentTrustBid: " + trustBidMemo + "]发布信托标的：基础设施类信托。类型：活期标" + this.toString());
+        System.out.println("[InfrastructureCurrentTrustBid: " + trustBidMemo + "]发布信托标的：基础设施类信托。类型：活期标。" + this.toString());
     }
 }
