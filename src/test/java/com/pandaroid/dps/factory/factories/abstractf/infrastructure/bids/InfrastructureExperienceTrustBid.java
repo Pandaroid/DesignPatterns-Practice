@@ -1,4 +1,4 @@
-package com.pandaroid.dps.factory.factories.abstractf.infrastructure;
+package com.pandaroid.dps.factory.factories.abstractf.infrastructure.bids;
 
 import com.pandaroid.dps.factory.factories.abstractf.iproducts.ICurrentTrustBid;
 import com.pandaroid.dps.factory.factories.abstractf.iproducts.IExperienceTrustBid;
