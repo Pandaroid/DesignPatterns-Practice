@@ -121,4 +121,24 @@ public class SimpleFactoryTest {
     }
     // End  : 插曲，一道算法题
 
+    // Start: 插曲，一道笔试题
+    static void pong() {
+        System.out.print("pong");
+    }
+    @Test
+    void testPingPong() {
+        Thread t = new Thread() {
+            public void run() {
+                pong();
+            }
+        };
+
+        // 同步运行，只能是 pongping
+        t.run();
+        // 异步启动线程，pingpong 和 pongping 都有可能
+        // t.start();
+        System.out.print("ping");
+    }
+    // End  : 插曲，一道笔试题
+
 }
