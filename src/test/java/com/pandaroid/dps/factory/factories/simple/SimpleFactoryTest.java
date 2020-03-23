@@ -141,4 +141,16 @@ public class SimpleFactoryTest {
     }
     // End  : 插曲，一道笔试题
 
+    // Start: 插曲，一道面试题
+    @Test
+    void testStringBufferAppendLengthCapacity() {
+        StringBuffer s1 = new StringBuffer(10);
+        s1.append("1234");
+        // s1.length(): 4
+        logger.info("s1.length(): {}", s1.length());
+        // s1.capacity(): 10
+        logger.info("s1.capacity(): {}", s1.capacity());
+    }
+    // End  : 插曲，一道面试题
+
 }

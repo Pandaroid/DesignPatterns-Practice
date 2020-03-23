@@ -5,8 +5,8 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DesignPatternsTests {
-    private static final Logger logger = LoggerFactory.getLogger(DesignPatternsTests.class);
+public class LazySingletonTests {
+    private static final Logger logger = LoggerFactory.getLogger(LazySingletonTests.class);
 
     @Test
     void testPaySimpleFactory() {
