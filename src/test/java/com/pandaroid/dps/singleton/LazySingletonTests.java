@@ -10,20 +10,20 @@ public class LazySingletonTests {
 
     @Test
     void testPaySimpleFactory() {
-        System.out.println("[DesignPatternsApplicationTests testPaySimpleFactory]");
+        System.out.println("[LazySingletonTests testPaySimpleFactory]");
     }
 
     @Test
-    void testDpLazySimpleSingleton() throws InterruptedException {
-        System.out.println("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
-        logger.debug("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
-        logger.info("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
-        logger.warn("[DesignPatternsApplicationTests testDpLazySimpleSingleton]");
+    void testDpLazySingleton() throws InterruptedException {
+        System.out.println("[LazySingletonTests testDpLazySingleton]");
+        logger.debug("[LazySingletonTests testDpLazySingleton]");
+        logger.info("[LazySingletonTests testDpLazySingleton]");
+        logger.warn("[LazySingletonTests testDpLazySingleton]");
         Thread t1 = new Thread(new EtTest());
         Thread t2 = new Thread(new EtTest());
         t1.start();
         t2.start();
         Thread.sleep(2000);
-        System.out.println("[DesignPatternsApplicationTests testDpLazySimpleSingleton] exec end");
+        System.out.println("[LazySingletonTests testDpLazySingleton] exec end");
     }
 }

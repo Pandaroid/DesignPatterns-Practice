@@ -1,12 +1,16 @@
 package com.pandaroid.dps.singleton.hungry;
 
-public class HungrySingleton {
+public class HungryStaticSingleton {
     // 单例实例
-    private static final HungrySingleton hungrySingletonInstance = new HungrySingleton();
+    private static final HungryStaticSingleton hungrySingletonInstance;
+    // static
+    static {
+        hungrySingletonInstance = new HungryStaticSingleton();
+    }
     // 构造方法私有
-    private HungrySingleton() {}
+    private HungryStaticSingleton() {}
     // 全局访问点
-    public static HungrySingleton getInstance() {
+    public static HungryStaticSingleton getInstance() {
         return hungrySingletonInstance;
     }
 }
