@@ -9,11 +9,6 @@ public class LazySingletonTests {
     private static final Logger logger = LoggerFactory.getLogger(LazySingletonTests.class);
 
     @Test
-    void testPaySimpleFactory() {
-        System.out.println("[LazySingletonTests testPaySimpleFactory]");
-    }
-
-    @Test
     void testDpLazySingleton() throws InterruptedException {
         System.out.println("[LazySingletonTests testDpLazySingleton]");
         logger.debug("[LazySingletonTests testDpLazySingleton]");
