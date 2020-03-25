@@ -245,3 +245,49 @@ Caused by: java.lang.RuntimeException: [LazyInnerClassSingleton] 单例类只能
 
 # 4. 序列化破坏单例的原理及解决方案
 
+通过序列化将单例写入磁盘，然后通过反序列化将单例读取回来，就能产生另一个单例对象，破坏单例。
+
+```java
+@Test
+void testSerializableSingleton() {
+    SerializableSingleton serializableSingleton2Read = null;
+    SerializableSingleton serializableSingleton2Write = SerializableSingleton.getInstance();
+
+    String fileName = "SerializableSingleton.obj";
+    FileOutputStream fos = null;
+    try {
+        // 序列化写出
+        fos = new FileOutputStream(fileName);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.writeObject(serializableSingleton2Write);
+        oos.flush();
+        oos.close();
+
+        // 序列化读入
+        FileInputStream fis = new FileInputStream(fileName);
+        ObjectInputStream ois = new ObjectInputStream(fis);
+        serializableSingleton2Read = (SerializableSingleton) ois.readObject();
+        ois.close();
+        
+        // 输出结果
+        System.out.println("[SingletonTests testSerializableSingleton] serializableSingleton2Write.toString(): " + serializableSingleton2Write.toString());
+        System.out.println("[SingletonTests testSerializableSingleton] serializableSingleton2Read.toString(): " + serializableSingleton2Read.toString());
+        System.out.println("[SingletonTests testSerializableSingleton] serializableSingleton2Write == serializableSingleton2Read : " + (serializableSingleton2Write == serializableSingleton2Read));
+        // [SingletonTests testSerializableSingleton] serializableSingleton2Write.toString(): com.pandaroid.dps.singleton.serializable.SerializableSingleton@69379752
+        // [SingletonTests testSerializableSingleton] serializableSingleton2Read.toString(): com.pandaroid.dps.singleton.serializable.SerializableSingleton@133e16fd
+        // [SingletonTests testSerializableSingleton] serializableSingleton2Write == serializableSingleton2Read : false
+        // 可以看到，通过序列化，我们破坏了官方比较推荐的单例写法。但是，这种破坏也是有解决方案的：readResolve
+        // private Object readResolve() {
+        //     return getInstance();
+        // }
+        // 再次执行，可以看到序列化无法破坏我们的单例了
+        // [SingletonTests testSerializableSingleton] serializableSingleton2Write.toString(): com.pandaroid.dps.singleton.serializable.SerializableSingleton@69379752
+        // [SingletonTests testSerializableSingleton] serializableSingleton2Read.toString(): com.pandaroid.dps.singleton.serializable.SerializableSingleton@69379752
+        // [SingletonTests testSerializableSingleton] serializableSingleton2Write == serializableSingleton2Read : true
+    } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+}
+```
+
+解决方案：readResolve 。为什么 readResolve 可以解决序列化破坏单例的问题？
