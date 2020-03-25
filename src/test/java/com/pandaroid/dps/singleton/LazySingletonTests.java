@@ -19,6 +19,8 @@ public class LazySingletonTests {
         t1.start();
         t2.start();
         Thread.sleep(2000);
-        System.out.println("[LazySingletonTests testDpLazySingleton] exec end");
+        System.out.println("[LazySingletonTests testDpLazySingleton] exec end. Integer.MAX_VALUE(2147483647) + 1 : " + (Integer.MAX_VALUE + 1));
+        System.out.println("[LazySingletonTests testDpLazySingleton] exec end. Integer.MIN_VALUE(-2147483648): " + (Integer.MIN_VALUE));
+        // Integer.MAX_VALUE(2147483647) + 1 : -2147483648
     }
 }
