@@ -9,7 +9,11 @@ public class LazyInnerClassSingleton implements ILazySingleton {
         System.out.format("[LazyInnerClassSingleton] static code block loaded!\n");
     }*/
 
-    private LazyInnerClassSingleton() {}
+    private LazyInnerClassSingleton() {
+        if(null != LazyInnerClassSingletonInstanceHolder.lazyInnerClassSingletonInstance) {
+            throw new RuntimeException("[LazyInnerClassSingleton] 单例类只能创建一个实例，不允许创建多个实例");
+        }
+    }
 
     // 这里看起来像饿汉式单例，实际上是懒汉式单例
     // LazyInnerClassSingletonInstanceHolder 内部类里面的初始化逻辑需要等到外部类方法调用 getInstance 时才会执行
@@ -25,7 +29,10 @@ public class LazyInnerClassSingleton implements ILazySingleton {
             System.out.format("[LazyInnerClassSingleton LazyInnerClassSingletonInstanceHolder] inner class static code block loaded!\n");
         }*/
 
-        private static final LazyInnerClassSingleton lazyInnerClassSingletonInstance = new LazyInnerClassSingleton();
+        private static final LazyInnerClassSingleton lazyInnerClassSingletonInstance;
+        static {
+            lazyInnerClassSingletonInstance  = new LazyInnerClassSingleton();
+        }
     }
 
     // 测试内部类的加载顺序：如果执行下面的方法，按 JLS 和 JVM 特性，上面内部类的 static 代码块不会执行
