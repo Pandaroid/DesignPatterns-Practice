@@ -440,13 +440,100 @@ JDK 的设计充分考虑到了单例被破坏的情况，让我们可以在 rea
 
 - 在 idea 的 plugin 中搜索反编译工具 Jad ，找到 IdeaJad ，并 install
 
-- 在 idea 的 target 目录下找到 EnumSingleton.class ，双击，进行反编译
+  - 在 idea 的 target 目录下找到 EnumSingleton.class ，双击，进行反编译
+  - 遗憾的是，在这里我发现并没有正确使用 Jad 反编译；换了其他 idea Jad 插件，也无法正常使用
+
+- 于是，我老老实实在 Mac 上下载 Jad ，加入 PATH ，运行
+
+  - bad cpu 出现了，不兼容我当前的 MacOS ？
+
+- 好吧，我只能在 PD 里打开 Windows ，下载 Jad ，执行命令：
+
+  - `.\jad Z:\Dev\GitRepos\MyGitHub\DesignPatterns
+     -Practice\target\test-classes\com\pandaroid\dps\singleton\regist\EnumSingleton.class
+     Parsing Z:\Dev\GitRepos\MyGitHub\DesignPatterns-Practice\target\test-classes\com\pandaroid\dps\singleton\regist\EnumSing
+     leton.class... Generating EnumSingleton.jad`
+
+  - ```powershell
+    ls
+    
+    
+       目录: \\Mac\Home\Downloads\jad158g.win
+    
+    
+     Mode        LastWriteTime     Length Name
+    
+    ----        -------------     ------ ----
+    
+     ------     2006/7/2   16:12     495616 jad.exe
+     ------    2020/3/28   1:44      1322 EnumSingleton.jad
+     --r---    2006/5/21   3:05      6677 Readme.txt
+    ```
+
+  - 可以看到 EnumSingleton.jad 已经反编译出来了
 
 - 反编译后的 EnumSingleton.jad 文件中，可以看到
 
 - ```java
+  // Decompiled by Jad v1.5.8g. Copyright 2001 Pavel Kouznetsov.
+  // Jad home page: http://www.kpdus.com/jad.html
+// Decompiler options: packimports(3) 
+  // Source File Name:   EnumSingleton.java
   
+  package com.pandaroid.dps.singleton.regist;
+  
+  import java.io.Serializable;
+  
+  public final class EnumSingleton extends Enum
+      implements Serializable
+  {
+  
+      public static EnumSingleton[] values()
+      {
+          return (EnumSingleton[])$VALUES.clone();
+      }
+  
+      public static EnumSingleton valueOf(String name)
+      {
+          return (EnumSingleton)Enum.valueOf(com/pandaroid/dps/singleton/regist/EnumSingleton, name);
+      }
+  
+      private EnumSingleton(String s, int i)
+      {
+          super(s, i);
+      }
+  
+      public static EnumSingleton getInstance()
+      {
+          return ENUM_SINGLETON_INSTANCE;
+      }
+  
+      public Object getData()
+      {
+          return data;
+      }
+  
+      public void setData(Object data)
+      {
+          this.data = data;
+      }
+  
+      public static final EnumSingleton ENUM_SINGLETON_INSTANCE;
+      private Object data;
+      private static final EnumSingleton $VALUES[];
+  
+      static 
+      {
+          ENUM_SINGLETON_INSTANCE = new EnumSingleton("ENUM_SINGLETON_INSTANCE", 0);
+          $VALUES = (new EnumSingleton[] {
+              ENUM_SINGLETON_INSTANCE
+          });
+      }
+  }
   ```
 
-  
+- Jad 1.5.8g 就是最新版本，从 `Jad home page: http://www.kpdus.com/jad.html` 可以看到
 
+  > Jul 02, 2006: Minor update to version 1.5.8g for Windows and Mac OS X (Intel).
+
+- Mac 遇到 bad cpu 问题，还好 Windows 的版本能正常用
