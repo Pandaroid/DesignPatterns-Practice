@@ -371,10 +371,62 @@ void testSerializableSingleton() {
 
   - 如果有的话，就会执行 `desc.invokeReadResolve(obj)` ，这里调用的，就是我们前面写的 readResolve 方法
 
-  - 虽然我们上面初始化了，但是只要我们的单例类里面有 readResolve 方法，就会被调用，返回 readResolve 方法 return 的对象 rep 为 `SerializableSingleton@1795` ，此时 obj 是 `SerializableSingleton@1859` ，通过
+    - 通过反射调用
 
+    - ```java
+      readResolveMethod = getInheritableMethod(
+          cl, "readResolve", null, Object.class);
+    ```
+  
+    - 获取 readResolve 方法，null 表示没有任何参数，返回类型为 Object.class
+  
+    - ```java
+      /**
+       * Returns non-static, non-abstract method with given signature provided it
+       * is defined by or accessible (via inheritance) by the given class, or
+       * null if no match found.  Access checks are disabled on the returned
+       * method (if any).
+       */
+      private static Method getInheritableMethod(Class<?> cl, String name,
+                                                 Class<?>[] argTypes,
+                                                 Class<?> returnType)
+      ```
+  
+    - 调用 readResolve 
+  
+    - ```java
+      /**
+       * Invokes the readResolve method of the represented serializable class and
+       * returns the result.  Throws UnsupportedOperationException if this class
+       * descriptor is not associated with a class, or if the class is
+       * non-serializable or does not define readResolve.
+       */
+      Object invokeReadResolve(Object obj)
+          throws IOException, UnsupportedOperationException
+      ```
+  
+    - ```java
+      return readResolveMethod.invoke(obj, (Object[]) null);
+      ```
+  
+    - invokeReadResolve 直接在 readResolveMethod 不为空的情况下 `return readResolveMethod.invoke(obj, (Object[]) null)`
+  
+  - 虽然我们上面初始化了，但是只要我们的单例类里面有 readResolve 方法，就会被调用，返回 readResolve 方法 return 的对象 rep 为 `SerializableSingleton@1795` ，此时 obj 是 `SerializableSingleton@1859` ，通过
+  
   - ```java
     handles.setObject(passHandle, obj = rep);
     ```
+  
+  - 就将 obj 1859 赋值为了 rep 1795 ，也就是我们当前的单例实例对象
 
-  - 就将 obj 1859 赋值为了 rep 1795
+JDK 的设计充分考虑到了单例被破坏的情况，让我们可以在 readResolve 中按实际需要自定义提供读入的对象。
+
+- readResolve 是 JDK 后面增加的一种机制
+- 重写 readResolve 方法，从源码上看，只不过是覆盖了反序列化出来的对象
+  - 即上面将 obj 1859 赋值为了 rep 1795 ，也就是将反序列化出来的新的实例，覆盖为乐我们当前的单例实例对象
+  - 所以，单例对象还是被创建了两次，只不过第二次发生在 JVM 层面，并且被 JDK 提供的 readResolve 机制覆盖为了我们正确的单例对象
+  - 发生在 JVM 层面，相对来说，比较安全
+  - 而之前反序列化出来的对象会被 GC 回收
+
+# 5. 《Effective Java》推荐的单例写法
+
