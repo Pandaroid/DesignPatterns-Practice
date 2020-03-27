@@ -291,3 +291,90 @@ void testSerializableSingleton() {
 ```
 
 解决方案：readResolve 。为什么 readResolve 可以解决序列化破坏单例的问题？
+
+- `serializableSingleton2Read = (SerializableSingleton) ois.readObject();` 这段代码读入进来强转后的对象不是前面 `oos.writeObject(serializableSingleton2Write);` 写出到硬盘的单例对象了，那么读取的过程，我们进入 `readObject()` 源码看看
+
+- 进去以后发现 `Object obj = readObject0(false);` 
+
+- 进入 `readObject0` ，经过前面一系列判断后，有以下代码：
+
+- ```java
+  case TC_OBJECT:
+      return checkResolve(readOrdinaryObject(unshared));
+  ```
+
+- `checkResolve` 这个方法，检查我们的对象 `SerializableSingleton` 是否有 readResolve 方法？在 `checkResolve` 之前，先 `readOrdinaryObject`
+
+- ```java
+  /**
+   * Reads and returns "ordinary" (i.e., not a String, Class,
+   * ObjectStreamClass, array, or enum constant) object, or null if object's
+   * class is unresolvable (in which case a ClassNotFoundException will be
+   * associated with object's handle).  Sets passHandle to object's assigned
+   * handle.
+   */
+  private Object readOrdinaryObject(boolean unshared)
+      throws IOException
+  ```
+
+- `readOrdinaryObject` 里面，有一段初始化？
+
+- ```java
+  obj = desc.isInstantiable() ? desc.newInstance() : null;
+  ```
+
+- 相当于是 class 的构造方法直接 new 一个对象
+
+- ```java
+  ObjectStreamClass desc = readClassDesc(false);
+  ```
+
+- 所以，我们的对象是否需要 new 一个实例，是否要看 `desc.isInstantiable()` 是否返回了 true ，所以导致 `desc.isInstantiable()` 新建了一个实例对象呢？在这里我向下看了一眼，发现下面有一句：
+
+- ```java
+  Object rep = desc.invokeReadResolve(obj);
+  ```
+
+- 好，先看一下 `desc.isInstantiable()` 
+
+- ```java
+  /**
+   * Returns true if represented class is serializable/externalizable and can
+   * be instantiated by the serialization runtime--i.e., if it is
+   * externalizable and defines a public no-arg constructor, or if it is
+   * non-externalizable and its first non-serializable superclass defines an
+   * accessible no-arg constructor.  Otherwise, returns false.
+   */
+  boolean isInstantiable() {
+      requireInitialized();
+      return (cons != null);
+  }
+  ```
+
+- 如果构造方法 cons 不为空，就给我们返回 true ，那么就会 `desc.isInstantiable()` 新建一个实例对象
+
+  - 什么情况下返回 true ？
+    - represented class 是 serializable / externalizable 并且能够被 serialization runtime 初始化
+      - 比如能 externalizable 并且定义了 public 的无参构造方法
+      - 或者 non-externalizable 并且它的第一个 non-serializable superclass 定义了一个 accessible no-arg constructor
+  - 其他情况，返回 false
+
+- 这里通过 debug ，确实执行了 `desc.isInstantiable()` ，重新分配内存创建对象 `SerializableSingleton@1859` 
+
+- ```java
+  if (obj != null &&
+      handles.lookupException(passHandle) == null &&
+      desc.hasReadResolveMethod())
+  ```
+
+- 上面是前面提到的 `Object rep = desc.invokeReadResolve(obj);` 代码进入的判断，也就是判断读进来的 desc 是否有 readResolve 方法
+
+  - 如果有的话，就会执行 `desc.invokeReadResolve(obj)` ，这里调用的，就是我们前面写的 readResolve 方法
+
+  - 虽然我们上面初始化了，但是只要我们的单例类里面有 readResolve 方法，就会被调用，返回 readResolve 方法 return 的对象 rep 为 `SerializableSingleton@1795` ，此时 obj 是 `SerializableSingleton@1859` ，通过
+
+  - ```java
+    handles.setObject(passHandle, obj = rep);
+    ```
+
+  - 就将 obj 1859 赋值为了 rep 1795
