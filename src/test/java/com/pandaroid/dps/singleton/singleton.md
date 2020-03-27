@@ -376,10 +376,11 @@ void testSerializableSingleton() {
     - ```java
       readResolveMethod = getInheritableMethod(
           cl, "readResolve", null, Object.class);
+      ```
     ```
-  
+    
     - 获取 readResolve 方法，null 表示没有任何参数，返回类型为 Object.class
-  
+    
     - ```java
       /**
        * Returns non-static, non-abstract method with given signature provided it
@@ -390,7 +391,7 @@ void testSerializableSingleton() {
       private static Method getInheritableMethod(Class<?> cl, String name,
                                                  Class<?>[] argTypes,
                                                  Class<?> returnType)
-      ```
+    ```
   
     - 调用 readResolve 
   
@@ -428,5 +429,24 @@ JDK 的设计充分考虑到了单例被破坏的情况，让我们可以在 rea
   - 发生在 JVM 层面，相对来说，比较安全
   - 而之前反序列化出来的对象会被 GC 回收
 
-# 5. 《Effective Java》推荐的单例写法
+# 5. 《Effective Java》推荐的单例写法 Enum
+
+枚举式单例，属于注册式单例。
+
+- 将每一个实例都缓存到统一的容器中，使用唯一标识获取实例
+- 因为序列化会破坏单例，反射也会破坏单例，而 Enum 枚举式单例可以防止这些问题
+
+为什么枚举式单例如此神奇？如何探究原理？
+
+- 在 idea 的 plugin 中搜索反编译工具 Jad ，找到 IdeaJad ，并 install
+
+- 在 idea 的 target 目录下找到 EnumSingleton.class ，双击，进行反编译
+
+- 反编译后的 EnumSingleton.jad 文件中，可以看到
+
+- ```java
+  
+  ```
+
+  
 

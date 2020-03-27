@@ -1,4 +1,4 @@
-package com.pandaroid.dps.singleton.threads;
+package com.pandaroid.dps.singleton;
 
 import com.pandaroid.dps.singleton.lazy.ILazySingleton;
 import com.pandaroid.dps.singleton.lazy.LazyInnerClassSingleton;
