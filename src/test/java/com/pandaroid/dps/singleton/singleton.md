@@ -537,3 +537,28 @@ JDK 的设计充分考虑到了单例被破坏的情况，让我们可以在 rea
   > Jul 02, 2006: Minor update to version 1.5.8g for Windows and Mac OS X (Intel).
 
 - Mac 遇到 bad cpu 问题，还好 Windows 的版本能正常用
+
+- 从反编译的 Jad 源码中，可以看到：
+
+  - 并没有无参的私有的构造方法
+
+  - ```java
+    private EnumSingleton(String s, int i)
+    {
+        super(s, i);
+    }
+    ```
+
+  - 单例实例是直接在 static 代码块中 new 出来的
+
+  - ``````java
+    static 
+    {
+        ENUM_SINGLETON_INSTANCE = new EnumSingleton("ENUM_SINGLETON_INSTANCE", 0);
+        $VALUES = (new EnumSingleton[] {
+            ENUM_SINGLETON_INSTANCE
+        });
+    }
+    ``````
+
+  - 这是饿汉式的写法，是线程安全的。那么它是如何避免序列化破坏单例的呢？还是从序列化反序列化的源码入手
