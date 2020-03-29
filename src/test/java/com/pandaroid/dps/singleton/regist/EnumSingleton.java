@@ -12,6 +12,7 @@ public enum EnumSingleton implements Serializable {
     }
 
     // Start: 需要增加数据对象，供调用获取
+    // 这个 data 才是真正的单例对象
     private Object data;
 
     public Object getData() {
