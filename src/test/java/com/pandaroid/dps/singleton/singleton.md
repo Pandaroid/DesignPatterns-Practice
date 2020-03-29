@@ -431,7 +431,7 @@ JDK 的设计充分考虑到了单例被破坏的情况，让我们可以在 rea
 
 # 5. 《Effective Java》推荐的单例写法 Enum
 
-枚举式单例，属于注册式单例。
+枚举式单例，属于注册式单例。另一种注册式单例是使用容器缓存。
 
 - 将每一个实例都缓存到统一的容器中，使用唯一标识获取实例
 - 因为序列化会破坏单例，反射也会破坏单例，而 Enum 枚举式单例可以防止这些问题
@@ -562,3 +562,327 @@ JDK 的设计充分考虑到了单例被破坏的情况，让我们可以在 rea
     ``````
 
   - 这是饿汉式的写法，是线程安全的。那么它是如何避免序列化破坏单例的呢？还是从序列化反序列化的源码入手
+  
+  - ```java
+    enumSingleton2Read = (EnumSingleton) ois.readObject();
+    ```
+  
+  - 还是从 readObject() 入手
+  
+  - ```java
+    Object obj = readObject0(false);
+    ```
+  
+  - readObject 中，调用 readObject0 ，其中，有一个 TC_ENUM 分支
+  
+  - ```java
+    case TC_ENUM:
+        return checkResolve(readEnum(unshared));
+    ```
+  
+  - readEnum 方法
+  
+  - ```java
+    /**
+     * Reads in and returns enum constant, or null if enum type is
+     * unresolvable.  Sets passHandle to enum constant's assigned handle.
+     */
+    private Enum<?> readEnum(boolean unshared) throws IOException
+    ```
+  
+  - 其中的关键代码：
+  
+  - ```java
+    Enum<?> en = Enum.valueOf((Class)cl, name);
+    result = en;
+    ```
+  
+  - 最后 return result 。这里 Enum.valueOf 通过 cl 和 name 唯一确定了一个 Enum
+  
+  - ```java
+    ObjectStreamClass desc = readClassDesc(false);
+    if (!desc.isEnum()) {
+        throw new InvalidClassException("non-enum class: " + desc);
+    }
+    ...
+    Class<?> cl = desc.forClass();
+    ```
+  
+  - 这里 cl 为 `class com.pandaroid.dps.singleton.regist.EnumSingleton` ，即 EnumSingleton.class
+  
+  - ``````java
+    String name = readString(false);
+    ``````
+  
+  - name 为 `ENUM_SINGLETON_INSTANCE` ，即单例的 name
+  
+  - ``````java
+    enumSingleton2Write.name(): ENUM_SINGLETON_INSTANCE
+    ``````
+  
+  - ```java
+    /**
+     * Returns the enum constant of the specified enum type with the
+     * specified name.  The name must match exactly an identifier used
+     * to declare an enum constant in this type.  (Extraneous whitespace
+     * characters are not permitted.)
+     *
+     * <p>Note that for a particular enum type {@code T}, the
+     * implicitly declared {@code public static T valueOf(String)}
+     * method on that enum may be used instead of this method to map
+     * from a name to the corresponding enum constant.  All the
+     * constants of an enum type can be obtained by calling the
+     * implicit {@code public static T[] values()} method of that
+     * type.
+     *
+     * @param <T> The enum type whose constant is to be returned
+     * @param enumType the {@code Class} object of the enum type from which
+     *      to return a constant
+     * @param name the name of the constant to return
+     * @return the enum constant of the specified enum type with the
+     *      specified name
+     * @throws IllegalArgumentException if the specified enum type has
+     *         no constant with the specified name, or the specified
+     *         class object does not represent an enum type
+     * @throws NullPointerException if {@code enumType} or {@code name}
+     *         is null
+     * @since 1.5
+     */
+    public static <T extends Enum<T>> T valueOf(Class<T> enumType,
+                                                String name) {
+        T result = enumType.enumConstantDirectory().get(name);
+        if (result != null)
+            return result;
+        if (name == null)
+            throw new NullPointerException("Name is null");
+        throw new IllegalArgumentException(
+            "No enum constant " + enumType.getCanonicalName() + "." + name);
+    }
+    ```
+  
+  - 通过枚举类 cl + 枚举的名字 name ，唯一确定了一个枚举的值，而这个枚举值被 JVM 保存着。通过 cl 和 name 就能确定被 JVM 保存着的这个枚举对象
+  
+  - 枚举类型单例不会被 newInstance 加载多次
+  
+  - 可以理解一下注册式单例的特点
+  
+    - ``````java
+      T result = enumType.enumConstantDirectory().get(name);
+      ``````
+  
+    - 如上，我已经注册在一个容器里了，直接通过 `Class<T> enumType,  String name` 唯一确定并拿出来之前注册的即可，不用再 newInstance 了，TC_ENUM 的反序列化有自己的流程逻辑
+
+- 反射能否破坏枚举式单例呢？
+
+  - 答案是不能，见我写的测试代码和注释说明：
+
+  - ```java
+    @Test
+        void testReflectEnumSingleton() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+            Class<?> clazz = EnumSingleton.class;
+    
+            // Start: 没有无参的 Constructor
+            /*Constructor constructorNoArgs = clazz.getDeclaredConstructor();
+            constructorNoArgs.setAccessible(true);
+            constructorNoArgs.newInstance();*/
+            // java.lang.NoSuchMethodException: com.pandaroid.dps.singleton.regist.EnumSingleton.<init>()
+            // End  : 没有无参的 Constructor
+    
+            // Start: 从反编译的源码中，我们看到有一个 Constructor
+            // private EnumSingleton(String s, int i)
+            // {
+            //     super(s, i);
+            // }
+            Constructor[] constructors = clazz.getDeclaredConstructors();
+            for (Constructor constructor : constructors) {
+                System.out.println("[SingletonTests testReflectEnumSingleton] constructor: " + constructor);
+                // [SingletonTests testReflectEnumSingleton] constructor: private com.pandaroid.dps.singleton.regist.EnumSingleton(java.lang.String,int)
+                // 只有这一个 Constructor ，我们尝试用它来 newInstance
+            }
+            Constructor constructorStringInt = clazz.getDeclaredConstructor(String.class, int.class);
+            constructorStringInt.setAccessible(true);
+            EnumSingleton enumSingleton = (EnumSingleton) constructorStringInt.newInstance("ENUM_SINGLETON_INSTANCE", 0);
+            System.out.println("[SingletonTests testReflectEnumSingleton] enumSingleton.getData(): " + enumSingleton.getData());
+            // java.lang.IllegalArgumentException: Cannot reflectively create enum objects
+            // 上面异常表示：不能用反射来创建枚举类型。为什么？答案就在 newInstance 方法的源码中
+            // if ((clazz.getModifiers() & Modifier.ENUM) != 0)
+            //     throw new IllegalArgumentException("Cannot reflectively create enum objects");
+            // 对枚举又是特殊对待，如果修饰符是 Modifier.ENUM 枚举类型，则直接抛出异常
+            // 因为在 JDK 中枚举的特殊性，无论在反编译后的 jad 源码中，还是反序列化、反射的源码中，我们都可以看到枚举非常特殊
+            // 正是因为这些特殊和优待保护，让枚举式单例十分优雅，成为《Effective Java》推荐的一种单例写法
+            // End  : 从反编译的源码中，我们看到有一个 Constructor
+        }
+    ```
+
+以上，我们看到枚举非常特殊，从 JDK 层面就为它不被反射和序列化反序列化破坏而保驾护航，从而让枚举单例实现十分优雅。这也是《Effective Java》推荐我们使用枚举实现单例的原因。
+
+枚举类实现单例符合注册式单例的特点，它也是饿汉式单例，也存在资源浪费问题。
+
+- 但是 JDK 会对枚举进行优化，而且是从 JDK 底层去优化的，JDK 的开发人员已经考虑到了这些问题
+- 所以《Effective Java》才会推荐，否则直接推荐饿汉式写法就行了
+
+# 6. 容器式单例
+
+容器式单例是另一种注册式单例，也是 Spring 中 IOC 容器使用的单例方式。
+
+- 方便管理大量单例对象。
+- 属于懒加载，懒汉式
+- 存在线程安全问题，解决方式 synchronized 不是很优雅，逼死强迫症
+  - DCL 经实测有明显优化效果，高并发下
+
+```java
+@Test
+void testContainerSingletonConcurrency() {
+    ConcurrentExecutor.execute(() -> {
+        Object bean = ContainerSingleton.getBean("com.pandaroid.dps.singleton.EtTest");
+        System.out.println("[SingletonTests testContainerSingletonConcurrency] bean: " + bean);
+        /*try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }*/
+    }, 1000, 6);
+    // 非线程安全，执行结果：
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@24d606ed
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@412414b2
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@a2514f8
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+    // [ConcurrentExecutor execute] executeTimeMillis: 4
+    // 加上 synchronized 以后，没有明显增加执行时间，但执行结果都是保持单例的一致的了
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+    // [ConcurrentExecutor execute] executeTimeMillis: 3
+    // 线程安全，executeCount 1000 ，耗时：
+    // [ConcurrentExecutor execute] executeTimeMillis: 71
+    // 线程安全，executeCount 1000 ，DCL ，耗时：
+    // [ConcurrentExecutor execute] executeTimeMillis: 47
+    // 明显 DCL 还是有作用的，逼死强迫症啊
+}
+```
+
+```java
+package com.pandaroid.dps.singleton.regist.concurrency;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
+
+public class ConcurrentExecutor {
+    /**
+     * 用于并发执行 runHandler 任务，控制执行总数 executeCount ，和可同时进入执行任务的并发数 concurrentCount
+     * @param runHandler
+     * @param executeCount
+     * @param concurrentCount
+     */
+    public static void execute(final RunHandler runHandler, int executeCount, int concurrentCount) {
+        // startTimeMillis
+        long startTimeMillis = System.currentTimeMillis();
+        // executorService
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        // 用 Semaphore 控制 concurrentCount 设置的并发数量
+        final Semaphore semaphore = new Semaphore(concurrentCount);
+        // 用 CountDownLaunch 来实现 executeCount 执行完毕后的 executorService 释放
+        final CountDownLatch countDownLatch = new CountDownLatch(executeCount);
+        for(int i = 0; i < executeCount; i++) {
+            executorService.execute(() -> {
+                try {
+                    // 控制并发不超过 concurrentCount ，超过的会在此阻塞等待直到其他线程 release 并 acquire 到许可以后再执行
+                    semaphore.acquire();
+                    runHandler.handler();
+                    // 释放许可
+                    semaphore.release();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } finally {
+                    countDownLatch.countDown();
+                }
+            });
+        }
+        // 在此通过 countDownLatch 阻塞主线程，直到 executeCount 的子线程执行完毕后（闭锁值为 0 时），阻塞释放，继续向下执行 executorService 的 shutDown
+        // The {@link #shutdown} method will allow previously submitted tasks to execute before terminating
+        // 所以我认为这里使用 countDownLatch 是没有必要的，但是 shutDown 在某些场景下有必要，因为：
+        // An unused {@code ExecutorService} should be shut down to allow reclamation of its resources.
+        // 经测试，不使用 countDownLatch ，执行 shutdown ，任务不能执行完全部 executeCount ，如果使用 shutdownNow ，会抛出 java.lang.InterruptedException: sleep interrupted
+        // 因为我们用 Thread.sleep() 来辅助测试
+        // 所以，这里使用 countDownLatch 是有必要的，但我还是怀疑这里是因为主线程提前结束了，所以子线程没执行完导致异常，于是我试试主线程 sleep 足够长时间
+        // 使用 shutdownNow 还是会 java.lang.InterruptedException: sleep interrupted
+        // 但是，使用 shutdown 最终所有 executeCount 个线程都执行完了，得证
+        // 所以，这里使用 countDownLatch 是更高效的解决了这个问题，而不用 sleep 足够长时间，executeCount 个都执行完了，阻塞解除，安全的 shutdown
+        // 否则，主线程结束了，子线程还没执行完，就会抛出异常
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        // shutDown executorService
+        executorService.shutdown();
+        // executorService.shutdownNow();
+        /*try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }*/
+        // 执行时间打印
+        System.out.println("[ConcurrentExecutor execute] executeTimeMillis: " + (System.currentTimeMillis() - startTimeMillis));
+    }
+}
+```
+
+```java
+package com.pandaroid.dps.singleton.regist.concurrency;
+
+public interface RunHandler {
+    void handler();
+}
+```
+
+```java
+package com.pandaroid.dps.singleton.regist;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class ContainerSingleton {
+    private ContainerSingleton() {}
+
+    private static Map<String, Object> ioc = new ConcurrentHashMap<>();
+
+    public static Object getBean(String className) {
+        if(!ioc.containsKey(className)) {
+            synchronized (ioc) {
+                if(!ioc.containsKey(className)) {
+                    try {
+                        Class clazz = Class.forName(className);
+                        Object obj = clazz.newInstance();
+                        ioc.put(className, obj);
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return ioc.get(className);
+    }
+}
+```
+
+# 7. ThreadLocal 单例
+
+最后一种单例写法，用处也很广，即 ThreadLocal 单例。比如用在数据库框架中，做 ThreadLocal 缓存。
+
+- ThreadLocal 的线程安全是通过每个线程自己的变量副本实现的，不是线程间的线程安全

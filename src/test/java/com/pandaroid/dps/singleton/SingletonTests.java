@@ -2,7 +2,11 @@ package com.pandaroid.dps.singleton;
 
 import com.pandaroid.dps.singleton.lazy.ILazySingleton;
 import com.pandaroid.dps.singleton.lazy.LazyInnerClassSingleton;
+import com.pandaroid.dps.singleton.regist.ContainerSingleton;
 import com.pandaroid.dps.singleton.regist.EnumSingleton;
+import com.pandaroid.dps.singleton.regist.ThreadLocalSingleton;
+import com.pandaroid.dps.singleton.regist.concurrency.ConcurrentExecutor;
+import com.pandaroid.dps.singleton.regist.concurrency.RunHandler;
 import com.pandaroid.dps.singleton.serializable.SerializableSingleton;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -95,6 +99,11 @@ public class SingletonTests {
         EnumSingleton enumSingleton2Read = null;
         EnumSingleton enumSingleton2Write = EnumSingleton.getInstance();
 
+        System.out.println("[SingletonTests testSerializableEnumSingleton] enumSingleton2Write.name(): " + enumSingleton2Write.name());
+        System.out.println("[SingletonTests testSerializableEnumSingleton] enumSingleton2Write.ordinal(): " + enumSingleton2Write.ordinal());
+        // [SingletonTests testSerializableEnumSingleton] enumSingleton2Write.name(): ENUM_SINGLETON_INSTANCE
+        // [SingletonTests testSerializableEnumSingleton] enumSingleton2Write.ordinal(): 0
+
         // 用于后面 getData 测试
         enumSingleton2Write.setData(new Object());
 
@@ -133,5 +142,97 @@ public class SingletonTests {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    void testReflectEnumSingleton() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Class<?> clazz = EnumSingleton.class;
+
+        // Start: 没有无参的 Constructor
+        /*Constructor constructorNoArgs = clazz.getDeclaredConstructor();
+        constructorNoArgs.setAccessible(true);
+        constructorNoArgs.newInstance();*/
+        // java.lang.NoSuchMethodException: com.pandaroid.dps.singleton.regist.EnumSingleton.<init>()
+        // End  : 没有无参的 Constructor
+
+        // Start: 从反编译的源码中，我们看到有一个 Constructor
+        // private EnumSingleton(String s, int i)
+        // {
+        //     super(s, i);
+        // }
+        Constructor[] constructors = clazz.getDeclaredConstructors();
+        for (Constructor constructor : constructors) {
+            System.out.println("[SingletonTests testReflectEnumSingleton] constructor: " + constructor);
+            // [SingletonTests testReflectEnumSingleton] constructor: private com.pandaroid.dps.singleton.regist.EnumSingleton(java.lang.String,int)
+            // 只有这一个 Constructor ，我们尝试用它来 newInstance
+        }
+        Constructor constructorStringInt = clazz.getDeclaredConstructor(String.class, int.class);
+        constructorStringInt.setAccessible(true);
+        EnumSingleton enumSingleton = (EnumSingleton) constructorStringInt.newInstance("ENUM_SINGLETON_INSTANCE", 0);
+        System.out.println("[SingletonTests testReflectEnumSingleton] enumSingleton.getData(): " + enumSingleton.getData());
+        // java.lang.IllegalArgumentException: Cannot reflectively create enum objects
+        // 上面异常表示：不能用反射来创建枚举类型。为什么？答案就在 newInstance 方法的源码中
+        // if ((clazz.getModifiers() & Modifier.ENUM) != 0)
+        //     throw new IllegalArgumentException("Cannot reflectively create enum objects");
+        // 对枚举又是特殊对待，如果修饰符是 Modifier.ENUM 枚举类型，则直接抛出异常
+        // 因为在 JDK 中枚举的特殊性，无论在反编译后的 jad 源码中，还是反序列化、反射的源码中，我们都可以看到枚举非常特殊
+        // 正是因为这些特殊和优待保护，让枚举式单例十分优雅，成为《Effective Java》推荐的一种单例写法
+        // End  : 从反编译的源码中，我们看到有一个 Constructor
+    }
+
+    @Test
+    void testContainerSingleton() {
+        Object bean = ContainerSingleton.getBean("com.pandaroid.dps.singleton.EtTest");
+        System.out.println("[SingletonTests testContainerSingleton] bean: " + bean);
+    }
+
+    @Test
+    void testContainerSingletonConcurrency() {
+        ConcurrentExecutor.execute(() -> {
+            Object bean = ContainerSingleton.getBean("com.pandaroid.dps.singleton.EtTest");
+            System.out.println("[SingletonTests testContainerSingletonConcurrency] bean: " + bean);
+            /*try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }*/
+        }, 1000, 6);
+        // 非线程安全，执行结果：
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@24d606ed
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@412414b2
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@a2514f8
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@1dd14e16
+        // [ConcurrentExecutor execute] executeTimeMillis: 4
+        // 加上 synchronized 以后，没有明显增加执行时间，但执行结果都是保持单例的一致的了
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [SingletonTests testContainerSingletonConcurrency] bean: com.pandaroid.dps.singleton.EtTest@173c9b06
+        // [ConcurrentExecutor execute] executeTimeMillis: 3
+        // 线程安全，executeCount 1000 ，耗时：
+        // [ConcurrentExecutor execute] executeTimeMillis: 71
+        // 线程安全，executeCount 1000 ，DCL ，耗时：
+        // [ConcurrentExecutor execute] executeTimeMillis: 47
+        // 明显 DCL 还是有作用的，逼死强迫症啊
+    }
+
+    @Test
+    void testThreadLocalSingleton() {
+        ThreadLocalSingleton threadLocalSingleton = ThreadLocalSingleton.getInstance();
+        System.out.println("[SingletonTests testThreadLocalSingleton] threadLocalSingleton: " + threadLocalSingleton);
+        // 多次执行，结果一致：
+        // [SingletonTests testThreadLocalSingleton] threadLocalSingleton: com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@2698dc7
     }
 }
