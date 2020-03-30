@@ -229,10 +229,45 @@ public class SingletonTests {
     }
 
     @Test
-    void testThreadLocalSingleton() {
-        ThreadLocalSingleton threadLocalSingleton = ThreadLocalSingleton.getInstance();
-        System.out.println("[SingletonTests testThreadLocalSingleton] threadLocalSingleton: " + threadLocalSingleton);
-        // 多次执行，结果一致：
-        // [SingletonTests testThreadLocalSingleton] threadLocalSingleton: com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@2698dc7
+    void testThreadLocalSingletonWithMultiThreads() {
+        System.out.println("[SingletonTests testThreadLocalSingleton] Thread.currentThread(): " + Thread.currentThread());
+        ThreadLocalSingleton.testLazy();
+        for (int i = 0; i < 3; i++) {
+            System.out.println("[SingletonTests testThreadLocalSingleton] ThreadLocalSingleton.getInstance(): " + ThreadLocalSingleton.getInstance());
+        }
+        // 多次执行，main 线程中的单例对象都是同一个：
+        // [SingletonTests testThreadLocalSingleton] Thread.currentThread(): Thread[main,5,main]
+        // [SingletonTests testThreadLocalSingleton] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@17baae6e
+        // [SingletonTests testThreadLocalSingleton] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@17baae6e
+        // [SingletonTests testThreadLocalSingleton] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@17baae6e
+        ConcurrentExecutor.execute(() -> {
+            System.out.println("[SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] Thread.currentThread(): " + Thread.currentThread());
+            for (int i = 0; i < 3; i++) {
+                System.out.println("[SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): " + ThreadLocalSingleton.getInstance());
+            }
+        }, 5, 1);
+        // 使用线程池运行，可以看到同一个 Thread 的单例对象总是同一个，不同的 Thread 单例对象不同，后面复用之前的 Thread 也跟之前的一样是同一个单例对象，因为是同一个线程
+        // 这个特性对于线程池复用的时候，复用数据库连接、做 ThreadLocal 缓存等都十分有效
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] Thread.currentThread(): Thread[pool-1-thread-1,5,main]
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@8f89285
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@8f89285
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@8f89285
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] Thread.currentThread(): Thread[pool-1-thread-3,5,main]
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@57b32e06
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@57b32e06
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@57b32e06
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] Thread.currentThread(): Thread[pool-1-thread-2,5,main]
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@18298554
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@18298554
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@18298554
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] Thread.currentThread(): Thread[pool-1-thread-3,5,main]
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@57b32e06
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@57b32e06
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@57b32e06
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] Thread.currentThread(): Thread[pool-1-thread-2,5,main]
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@18298554
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@18298554
+        // [SingletonTests testThreadLocalSingleton ConcurrentExecutor.execute] ThreadLocalSingleton.getInstance(): com.pandaroid.dps.singleton.regist.ThreadLocalSingleton@18298554
+        // [ConcurrentExecutor execute] executeTimeMillis: 4
     }
 }

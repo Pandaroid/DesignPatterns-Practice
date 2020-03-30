@@ -883,6 +883,173 @@ public class ContainerSingleton {
 
 # 7. ThreadLocal 单例
 
-最后一种单例写法，用处也很广，即 ThreadLocal 单例。比如用在数据库框架中，做 ThreadLocal 缓存。
+最后一种单例写法，用处也很广，即 ThreadLocal 单例。
+
+- 保证线程内唯一
+- 天生线程安全
+
+比如用在数据库框架中，做 ThreadLocal 缓存、数据库连接 Holder 、单例 bean 基于线程隔离变量副本、Session 管理、多数据源动态切换等。
 
 - ThreadLocal 的线程安全是通过每个线程自己的变量副本实现的，不是线程间的线程安全
+- 是通过线程隔离达到的“伪线程安全”
+- 根据查阅的资料，ThreadLocal 也是注册式单例，因为跟容器式单例类似，ThreadLocalMap 也是一个容器
+- initialValue() 是一个 protected 方法，一般是用来在使用时进行重写的，它是一个延迟加载方法，所以 ThreadLocal 单例也是懒汉式
+
+原理（ThreadLocal.java 源码）：
+
+```java
+/**
+ * Returns the value in the current thread's copy of this
+ * thread-local variable.  If the variable has no value for the
+ * current thread, it is first initialized to the value returned
+ * by an invocation of the {@link #initialValue} method.
+ *
+ * @return the current thread's value of this thread-local
+ */
+public T get() {
+    Thread t = Thread.currentThread();
+    ThreadLocalMap map = getMap(t);
+    if (map != null) {
+        ThreadLocalMap.Entry e = map.getEntry(this);
+        if (e != null) {
+            @SuppressWarnings("unchecked")
+            T result = (T)e.value;
+            return result;
+        }
+    }
+    return setInitialValue();
+}
+
+/**
+ * Get the map associated with a ThreadLocal. Overridden in
+ * InheritableThreadLocal.
+ *
+ * @param  t the current thread
+ * @return the map
+ */
+ThreadLocalMap getMap(Thread t) {
+		return t.threadLocals;
+}
+
+/* ThreadLocal values pertaining to this thread. This map is maintained
+ * by the ThreadLocal class. */
+ThreadLocal.ThreadLocalMap threadLocals = null;
+```
+
+- ThreadLocalMap 是从当前线程 Thread.currentThread() 当中获取的 threadLocals ，我理解为每一个线程对象都有一个 `ThreadLocal.ThreadLocalMap threadLocals` ，用于保存自己的变量副本（maintaining thread local values）
+
+- 如果获取成功，则返回 value 值。如果 map 为空，则调用 setInitialValue 方法返回 value ，这里返回的就是我们在 ThreadLocalSingleton 中覆盖的 new ThreadLocalSingleton()。
+
+- ```java
+  /*private static final ThreadLocal<ThreadLocalSingleton> threadLocalSingletonInstance = new ThreadLocal<ThreadLocalSingleton>() {
+      @Override
+      protected ThreadLocalSingleton initialValue() {
+          return new ThreadLocalSingleton();
+      }
+  };*/
+  private static final ThreadLocal<ThreadLocalSingleton> threadLocalSingletonInstance = new ThreadLocal<ThreadLocalSingleton>().withInitial(() -> {
+      System.out.println("[ThreadLocalSingleton withInitial] Thread.currentThread(): " + Thread.currentThread());
+      return new ThreadLocalSingleton();
+  });
+  ```
+
+- ```java
+  /**
+   * Variant of set() to establish initialValue. Used instead
+   * of set() in case user has overridden the set() method.
+   *
+   * @return the initial value
+   */
+  private T setInitialValue() {
+      T value = initialValue();
+      Thread t = Thread.currentThread();
+      ThreadLocalMap map = getMap(t);
+      if (map != null)
+          map.set(this, value);
+      else
+          createMap(t, value);
+      return value;
+  }
+  ```
+
+- ```java
+  /**
+   * ThreadLocalMap is a customized hash map suitable only for
+   * maintaining thread local values. No operations are exported
+   * outside of the ThreadLocal class. The class is package private to
+   * allow declaration of fields in class Thread.  To help deal with
+   * very large and long-lived usages, the hash table entries use
+   * WeakReferences for keys. However, since reference queues are not
+   * used, stale entries are guaranteed to be removed only when
+   * the table starts running out of space.
+   */
+  static class ThreadLocalMap {
+  
+  		/**
+       * The entries in this hash map extend WeakReference, using
+       * its main ref field as the key (which is always a
+       * ThreadLocal object).  Note that null keys (i.e. entry.get()
+       * == null) mean that the key is no longer referenced, so the
+       * entry can be expunged from table.  Such entries are referred to
+       * as "stale entries" in the code that follows.
+       */
+      static class Entry extends WeakReference<ThreadLocal<?>> {
+      		/** The value associated with this ThreadLocal. */
+          Object value;
+  
+          Entry(ThreadLocal<?> k, Object v) {
+          		super(k);
+            	value = v;
+          }
+      }
+    
+    	...
+    
+  		/**
+   		 * Construct a new map initially containing (firstKey, firstValue).
+   		 * ThreadLocalMaps are constructed lazily, so we only create
+   		 * one when we have at least one entry to put in it.
+   		 */
+  		ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
+      		table = new Entry[INITIAL_CAPACITY];
+      		int i = firstKey.threadLocalHashCode & (INITIAL_CAPACITY - 1);
+      		table[i] = new Entry(firstKey, firstValue);
+      		size = 1;
+      		setThreshold(INITIAL_CAPACITY);
+  		}
+    
+    	...
+        
+  }
+  ```
+
+- ThreadLocal 可以更简单、更高效的解决并发问题
+- 注意当前线程的 `ThreadLocal.ThreadLocalMap threadLocals` 中的 Entry 数组，每一个 Entry 的 key 是当前 ThreadLocal<?> 对象
+- ThreadLocal 类允许我们创建只能被同一个线程读写的变量。因此，如果一段代码含有一个 ThreadLocal 变量的引用，即使两个线程同时执行这段代码，它们也无法访问到对方的 ThreadLocal 变量
+
+在每个线程 Thread 内部有一个 ThreadLocal.ThreadLocalMap 类型的成员变量 threadLocals ，这个 threadLocals 就是用来存储实际的变量副本的，键值为当前 ThreadLocal 变量，value 为变量副本（即 T 类型的变量）。初始时，在 Thread 里面，threadLocals 为空，当通过 ThreadLocal 变量调用 get() 方法或者 set() 方法，就会对 Thread 类中的 threadLocals 进行初始化，并且以当前 ThreadLocal 变量为键值，以 ThreadLocal 要保存的副本变量为 value ，存到 threadLocals 。 然后在当前线程里面，如果要使用副本变量，就可以通过 get 方法在 threadLocals 里面查找。
+
+1. 实际的通过 ThreadLocal 创建的副本是存储在每个线程自己的 threadLocals 中的
+2. 为何 threadLocals 的类型 ThreadLocalMap 的键值为 ThreadLocal 对象，因为每个线程中可有多个 threadLocal 变量
+3. 在进行 get 之前，必须先 set ，否则会报空指针异常；如果想在 get 之前不需要调用 set 就能正常访问的话，必须重写 initialValue() 方法。 因为在上面的代码分析过程中，我们发现如果没有先 set 的话，即在 map 中查找不到对应的存储，则会通过调用 setInitialValue 方法返回 i ，而在 setInitialValue 方法中，有一个语句是 T value = initialValue() ， 而默认情况下，initialValue 方法返回的是 null 。
+
+# 8. 总结
+
+单例模式的优点：
+
+- 在内存中只有一个实例，减少了内存开销，避免频繁创建回收 GC
+- 可以避免对资源的多重占用
+- 设置全局访问点，严格控制访问
+
+单例模式的缺点：
+
+- 没有接口，扩展困难
+- 如果要扩展单例对象，只有修改代码，没有其他途径
+
+单例模式的知识重点总结：
+
+- 私有化构造器
+- 保证线程安全
+- 延迟加载
+- 防止序列化和反序列化破坏单例
+- 防御反射攻击单例
